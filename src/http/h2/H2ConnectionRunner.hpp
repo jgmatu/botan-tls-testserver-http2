@@ -1,5 +1,11 @@
 #pragma once
 
+/**
+ * @file
+ * @brief Coroutine I/O loop that drives an HTTP/2 engine over an Asio stream.
+ * @ingroup h2
+ */
+
 #include "common/NetErrors.hpp"
 #include "common/StreamCancel.hpp"
 #include "http/h2/IH2Engine.hpp"
@@ -24,14 +30,39 @@
 #include <vector>
 
 /**
- * Pumps bytes between an Asio stream and an HTTP/2 engine until the engine
- * is done, the peer disconnects or the connection stays idle for too long.
+ * @brief Pumps bytes between an Asio stream and an HTTP/2 engine.
+ *
+ * It runs until the engine is done, the peer disconnects or the connection
+ * stays idle for too long. Each round writes everything the engine has queued,
+ * then reads up to 16 KiB and feeds it to IH2Engine::consume(). Reads and
+ * writes never overlap.
+ *
+ * The idle timer is re-armed on every round. When it fires it cancels the
+ * pending I/O (cancel_pending_io()); the read then fails with
+ * operation_aborted and run() returns.
  */
 class H2ConnectionRunner {
    public:
+      /**
+       * @param engine       Protocol engine, usually an H2Session. Not owned; must outlive run().
+       * @param idle_timeout Time without progress before the connection is dropped. Zero or negative disables it.
+       */
       explicit H2ConnectionRunner(IH2Engine& engine, std::chrono::milliseconds idle_timeout = std::chrono::seconds(30)) :
             engine_(engine), idle_timeout_(idle_timeout) {}
 
+      /**
+       * @brief Runs the connection to the end.
+       *
+       * Returns normally when the engine wants neither to read nor to write,
+       * on a benign disconnect (see is_benign_disconnect()), on end of stream,
+       * and on idle timeout. The stream is not shut down here; the caller does it.
+       *
+       * @tparam AsyncStream A socket or Botan::TLS::Stream with async_read_some and async_write support.
+       * @param stream Established stream. Must outlive the coroutine.
+       * @return Awaitable that completes when the connection is over.
+       * @throws boost::system::system_error On any other I/O error.
+       * @throws std::exception              Whatever the engine throws.
+       */
       template <typename AsyncStream>
       boost::asio::awaitable<void> run(AsyncStream& stream);
 

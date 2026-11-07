@@ -1,5 +1,11 @@
 #pragma once
 
+/**
+ * @file
+ * @brief Demo WebSocket service: pushes a seconds counter to the client.
+ * @ingroup ws
+ */
+
 #include "common/StreamCancel.hpp"
 #include "ws/WebSocketFrame.hpp"
 #include "ws/WebSocketIo.hpp"
@@ -23,8 +29,24 @@
 #include <string_view>
 
 /**
- * After the handshake: sends a seconds counter once per second, answers
- * ping with pong and close with close. Returns when the peer closes or goes away.
+ * @brief Sends a seconds counter after the handshake and answers control frames.
+ *
+ * Sends the text frame "0" immediately, then "1", "2", ... once per second.
+ * Answers ping with a pong carrying the same payload. Answers close with a
+ * close frame that echoes the client's status code, or 1000 if it sent none,
+ * and then returns. Text and binary frames from the client are ignored.
+ *
+ * Botan::TLS::Stream does not allow a write while a read is pending, so the
+ * loop only ever has one operation in flight. The one-second timer marks the
+ * tick as due and cancels the pending read (cancel_pending_io()). The
+ * coroutine then writes the counter and reads again.
+ *
+ * @tparam Stream Asio stream (socket or Botan::TLS::Stream).
+ * @param stream Stream on which the 101 response has been sent.
+ * @param parser Parser already holding any bytes received after the upgrade request.
+ * @return Awaitable that completes after a close frame, end of stream or a read error.
+ * @throws boost::system::system_error On a write error.
+ * @throws std::runtime_error          When the client sends an invalid frame (see FrameParser::next()).
  */
 template <typename Stream>
 boost::asio::awaitable<void> pump_seconds_counter(Stream& stream, FrameParser& parser) {

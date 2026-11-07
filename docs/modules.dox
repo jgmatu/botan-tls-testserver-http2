@@ -1,0 +1,74 @@
+/**
+@defgroup server Server
+@brief Startup, listeners, TLS handshake and ALPN dispatch.
+
+The program entry point parses the command line (parse_command_line()) and runs ServerApp,
+which builds the shared Botan::TLS::Context (create_tls_context()) and starts
+one run_tcp_listener() per port. Each accepted socket goes to a
+TlsSessionHandler, which performs the TLS handshake with a
+ServerStreamCallbacks and passes the stream to the IProtocolHandler that
+matches the negotiated ALPN protocol.
+
+@dot
+digraph connection {
+   rankdir=LR;
+   node [shape=box, fontname="Helvetica", fontsize=10];
+   edge [fontname="Helvetica", fontsize=9];
+   TcpListener [label="run_tcp_listener"];
+   TlsSessionHandler -> Http2ProtocolHandler [label="ALPN h2"];
+   TlsSessionHandler -> WebSocketProtocolHandler [label="ALPN http/1.1"];
+   TcpListener -> TlsSessionHandler;
+   Http2ProtocolHandler -> H2ConnectionRunner -> H2Session -> WebApplication;
+   WebSocketProtocolHandler -> serve_websocket -> pump_seconds_counter;
+}
+@enddot
+
+The HTTPS port serves both protocols, so a browser reaches the page and
+wss://host:port/ws with the same certificate exception. The --ws-port
+listener always serves the WebSocket and exists for clients that are not
+a browser.
+
+@defgroup tls TLS
+@brief Botan callbacks, credentials, policy and the connection details reported to the page.
+
+ServerStreamCallbacks is created per connection. It selects the ALPN
+protocol (select_alpn_protocol()), staples the OCSP response and records
+the negotiated key exchange group, which ApiHandler later reports as JSON
+(to_json()). BasicCredentialsManager and load_tls_policy() feed the shared
+TLS context.
+
+@defgroup http HTTP
+@brief Application layer: routing, REST API and static files.
+
+Independent of nghttp2: handlers receive an H2Request and answer through an
+IH2Responder. WebApplication routes /api to ApiHandler and everything else
+to StaticFileHandler.
+
+@defgroup h2 HTTP/2
+@ingroup http
+@brief Server-side HTTP/2 on top of nghttp2, split into protocol engine and I/O loop.
+
+H2Session (an IH2Engine) turns bytes into requests and responses into bytes
+and never touches a socket. H2ConnectionRunner moves bytes between the
+engine and an Asio stream and enforces the idle timeout. There is no
+HTTP/1.1 fallback, no h2c upgrade and no extended CONNECT.
+
+@defgroup ws WebSocket
+@brief RFC 6455 over an established TLS stream, with a seconds counter as demo service.
+
+serve_websocket() reads the HTTP/1.1 upgrade request, answers 101 and runs
+pump_seconds_counter(). Frames are parsed by FrameParser and written with
+write_frame(). The coroutines are templates on the stream type and work on
+a plain socket as well as on Botan::TLS::Stream.
+
+@defgroup ocsp OCSP
+@brief Fetching and caching of OCSP responses for stapling.
+
+OcspCache is the IOcspProvider used by the TLS callbacks. On a miss it
+fetches through BeastOcspFetcher (HTTP/1.1 POST with Boost.Beast), checks
+the status and keeps the response in OcspResponseStore for the time given by
+estimate_cache_duration().
+
+@defgroup common Common
+@brief Logging, clock, error classification and string helpers.
+*/

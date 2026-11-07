@@ -307,6 +307,22 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+## Documentation
+
+Every header under `src/` has Doxygen comments describing what the class or
+function does, who calls it and what it returns or throws. The `docs` target
+exists when CMake finds Doxygen:
+
+```bash
+sudo apt install doxygen graphviz
+cmake -B build -S .
+cmake --build build --target docs
+```
+
+Open `build/docs/html/index.html`. The Topics page groups the classes by
+module (server, tls, http, h2, ws, ocsp, common). `doxygen Doxyfile` from the
+repository root produces the same output without CMake.
+
 ## Run
 
 You'll need a certificate for your test server. If you don't have one, you can
