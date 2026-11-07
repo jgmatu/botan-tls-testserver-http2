@@ -1,3 +1,4 @@
 .cache
 build
 certs
+3rdparty/src

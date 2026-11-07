@@ -59,6 +59,9 @@
 
             <p>Your browser negotiated <span id="kex_algo">unknown</span> <span id="kex_algo_type"></span> for the key exchange with this server.</p>
 
+            <h2>WebSocket time counter</h2>
+            <p>The server pushes a seconds counter over WSS on this same host: <span id="ws_counter">…</span></p>
+
             <h2>Contact</h2>
             <p>Please don't hesitate to contact us via <a href="mailto:pq-test@botan-crypto.org">pq-test@botan-crypto.org</a></p>
             
@@ -90,6 +93,15 @@
                         name_field.classList.add("notpqc")
                         type_field.innerHTML = "(not quantum secure)"
                     }
+
+                    const counter = document.getElementById('ws_counter');
+                    const ws = new WebSocket('wss://' + location.host + '/ws');
+                    ws.onmessage = (event) => {
+                        counter.textContent = event.data;
+                    };
+                    ws.onerror = () => {
+                        counter.textContent = 'unavailable';
+                    };
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation: ', error);
