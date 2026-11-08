@@ -294,7 +294,7 @@ The install script also installs GoogleTest and GoogleMock (`libgtest-dev`,
 `libgmock-dev`) with apt, which the unit tests need. Pass `-DBUILD_TESTING=OFF`
 to `cmake` to build without them.
 
-## Tests
+## Unit tests
 
 The server code lives in a static library (`testserver_core`) behind small
 interfaces (`IClock`, `ILogger`, `IFileSystem`, `IH2Responder`, `IH2Engine`,
@@ -306,6 +306,10 @@ cmake -B build -S .
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+
+CTest runs only this suite. The end-to-end tests live in `e2e/` and run in the
+container described in [e2e/README.md](e2e/README.md). They are not part of
+CTest: Chromium and Robot Framework are not part of the C++ build.
 
 ## Documentation
 

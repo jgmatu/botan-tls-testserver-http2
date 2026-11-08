@@ -1,0 +1,8 @@
+services:
+  e2e:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: botan-tls-testserver-e2e
+    volumes:
+      - ../build/e2e:/tmp/e2e-report

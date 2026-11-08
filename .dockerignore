@@ -1,0 +1,6 @@
+build
+certs
+.git
+3rdparty/src
+**/__pycache__
+**/*.pyc
