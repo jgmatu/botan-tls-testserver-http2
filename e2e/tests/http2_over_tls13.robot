@@ -1,6 +1,6 @@
 *** Settings ***
 Resource         ../resources/browser.resource
-Library          ../libraries/TestServer.py
+Resource         ../resources/server.resource
 Library          ../libraries/ChromeNetwork.py
 Suite Setup      Start Test Server
 Suite Teardown   Stop Test Server

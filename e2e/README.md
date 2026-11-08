@@ -12,7 +12,7 @@ The WebSocket on `/ws` is ALPN `http/1.1` on purpose (RFC 6455, no extended CONN
 
 The image builds Botan, Boost and nghttp2 with `3rdparty/install.sh`, then builds `testserver` with `-DBUILD_TESTING=OFF`. It does not compile or run `testserver_tests`. Chromium, chromedriver and the Python packages in `e2e/requirements.txt` are installed in the same image.
 
-Chromium and the server share the container's network namespace and talk over `localhost`. The suite generates a throwaway certificate for that name, so nothing is published on the host and the certificate does not need another SAN. A second service would have to route the certificate name and the host Chromium connects to.
+Chromium and the server share the container's network namespace and talk over `localhost:50443`. The suite generates a throwaway certificate for that name with `botan` and starts `testserver` through Robot's Process library, so nothing is published on the host and the certificate does not need another SAN. A second service would have to route the certificate name and the host Chromium connects to.
 
 SeleniumLibrary's `Open Browser` starts Chromium with:
 
