@@ -14,6 +14,31 @@ The image builds Botan, Boost and nghttp2 with `3rdparty/install.sh`, then build
 
 Chromium and the server share the container's network namespace and talk over `localhost:50443`. The suite generates a throwaway certificate for that name with `botan` and starts `testserver` through Robot's Process library, so nothing is published on the host and the certificate does not need another SAN. A second service would have to route the certificate name and the host Chromium connects to.
 
+```mermaid
+flowchart LR
+  subgraph host["Host"]
+    compose["docker compose"]
+    volume["build/e2e"]
+    unit["CTest · tests/"]
+  end
+
+  subgraph box["Container · one network namespace"]
+    robot["Robot Framework"]
+    server["testserver · localhost:50443"]
+    chrome["Chromium"]
+    log["ChromeNetwork.py"]
+  end
+
+  compose -->|"run --rm · no published ports"| robot
+  robot -->|"Process · botan cert"| server
+  robot -->|"SeleniumLibrary"| chrome
+  chrome -->|"HTTPS and WSS · localhost"| server
+  chrome -->|"performance log"| log
+  robot -->|"/tmp/e2e-report"| volume
+```
+
+The unit tests stay on the host. Inside the container the only network path is `localhost`. The report volume is the only data that leaves it.
+
 SeleniumLibrary's `Open Browser` starts Chromium with:
 
 | Flag | Why |
