@@ -1,5 +1,5 @@
 *** Settings ***
-Library          SeleniumLibrary
+Resource         ../resources/browser.resource
 Library          ../libraries/TestServer.py
 Library          ../libraries/ChromeNetwork.py
 Suite Setup      Start Test Server

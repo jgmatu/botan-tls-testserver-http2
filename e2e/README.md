@@ -2,7 +2,7 @@
 
 These tests open the real page in Chromium and check that the browser used HTTP/2 over TLS 1.3. They are separate from the unit tests in `tests/`, which run on the host with CTest and do not start a browser.
 
-`curl --http2` can speak HTTP/2, but it is not the browser. The page itself cannot tell either: `performance.getEntries()` and `fetch` do not expose ALPN or the TLS version. Chromium reports both in the DevTools event `Network.responseReceived`: `response.protocol` is `h2` and `response.securityDetails.protocol` is `TLS 1.3`. Selenium reads that event from Chromium's performance log. A response without `securityDetails` fails the test, because TLS was not observed.
+`curl --http2` can speak HTTP/2, but it is not the browser. The page itself cannot tell either: `performance.getEntries()` and `fetch` do not expose ALPN or the TLS version. Chromium reports both in the DevTools event `Network.responseReceived`: `response.protocol` is `h2` and `response.securityDetails.protocol` is `TLS 1.3`. SeleniumLibrary opens the browser. `ChromeNetwork.py` then reads that event from the performance log of the same session. A response without `securityDetails` fails the test, because TLS was not observed.
 
 The WebSocket on `/ws` is ALPN `http/1.1` on purpose (RFC 6455, no extended CONNECT). The suite checks that the seconds counter reaches `1`. It does not require that socket to be HTTP/2.
 
@@ -14,7 +14,7 @@ The image builds Botan, Boost and nghttp2 with `3rdparty/install.sh`, then build
 
 Chromium and the server share the container's network namespace and talk over `localhost`. The suite generates a throwaway certificate for that name, so nothing is published on the host and the certificate does not need another SAN. A second service would have to route the certificate name and the host Chromium connects to.
 
-Chromium is started with:
+SeleniumLibrary's `Open Browser` starts Chromium with:
 
 | Flag | Why |
 |---|---|
